@@ -4,6 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>SFC Scorer</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0C1B3D">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="SFC Scorer">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{--page:#EAEEF4;--ink:#14203A;--board:#0C1B3D;--chalk:#F3F5E8;--tape:#F7B500;--wk:#D9482B;--card:#FFFFFF;--line:#D3DAE6;--mute:#5D6B82;
@@ -378,7 +383,7 @@ document.addEventListener("change",function(e){var el=e.target,f=el.files&&el.fi
 function show(){
   var y=window.scrollY,h;
   if(ABOUT)h=aboutView();
-  else if(!FB)h='<div class="card"><h2>Connect nahi ho saka</h2><p class="mute">Internet check karein aur page dobara kholein.</p></div>';
+  else if(!FB&&!READY)h='<div class="card"><h2>Connect nahi ho saka</h2><p class="mute">Internet check karein aur page dobara kholein.</p></div>';
   else if(ERR)h='<div class="card"><h2>Masla</h2><p class="mute">'+esc(ERR)+'</p></div>';
   else if(!READY)h='<div class="card"><p class="mute">Load ho raha hai...</p></div>';
   else if(LOGINV)h=loginView();
@@ -529,9 +534,11 @@ $("hl").src=BRAND;
 $("hb").onclick=function(){ABOUT=false;if(!FB)return;if(ADMIN){FB.auth.signOut(fauth)}else{LOGINV=true;show()}};
 $("app").addEventListener("toggle",function(e){if(e.target.tagName=="DETAILS")SCOPEN=e.target.open},true);
 $("ab").onclick=function(){ABOUT=true;LOGINV=false;show();window.scrollTo(0,0)};
+try{var cc=localStorage.getItem("sfc_cache");if(cc){rebuild(JSON.parse(cc));READY=true}}catch(e){}
 setDot();setHdr();show();
+if("serviceWorker" in navigator)navigator.serviceWorker.register("./sw.js").catch(function(){});
 if(FB){
-  FB.db.onValue(FB.db.ref(fdb,"tours"),function(snap){rebuild(snap.val());READY=true;ERR="";if(!busy())show()},function(e){ERR="Data load nahi hua: "+e.message;show()});
+  FB.db.onValue(FB.db.ref(fdb,"tours"),function(snap){var tv=snap.val();try{localStorage.setItem("sfc_cache",JSON.stringify(tv))}catch(e){}rebuild(tv);READY=true;ERR="";if(!busy())show()},function(e){ERR="Data load nahi hua: "+e.message;show()});
   FB.db.onValue(FB.db.ref(fdb,".info/connected"),function(snap){ONLINE=!!snap.val();setDot()});
   FB.auth.onAuthStateChanged(fauth,function(u){ADMIN=!!u;MYUID=u?u.uid:"";LOGINV=false;
     if(UNSUB){UNSUB();UNSUB=null}ADMINS={};ADMERR="";
