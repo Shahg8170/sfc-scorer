@@ -140,14 +140,10 @@ function wid(m){var S=m.S;if(!S.done)return null;var w=winIdx(S);if(w>=0)return 
 function mkko(t,A,B,lbl,k){var m={id:uid(),S:mkS(A,B,t.ov,0),ts:Date.now()+t.matches.length,when:0,started:false,ta:A.id,tb:B.id,k:k,lbl:lbl};t.matches.push(m);return m}
 function champ(t){var f=t.matches.filter(function(m){return m.k=="f"})[0];if(!f)return null;var w=wid(f);if(!w)return null;return t.teams.filter(function(x){return x.id==w})[0]||null}
 function champCard(t){var c=champ(t);return c?'<div class="card mom"><h2>Champion</h2><div class="row" style="justify-content:flex-start">'+lg(c.logo,c.name)+'<b style="font-size:20px">'+esc(c.name)+'</b></div></div>':""}
-function koCard(t){if(!t.groups)return "";var sfs=t.matches.filter(function(m){return m.k=="sf"}),f=t.matches.filter(function(m){return m.k=="f"})[0];
-  var h='<div class="card"><h2>Semi Final &amp; Final</h2>';
-  if(!sfs.length){var pend=t.matches.filter(function(m){return !m.k&&!m.S.done}).length;
-    h+='<p class="mute">After the group matches: the 1st team of Group A plays the 2nd team of Group B, and the 1st team of Group B plays the 2nd team of Group A. The two winners play the Final.</p>';
-    if(ADMIN)h+=(pend?'<p class="mute">'+pend+' group match(es) still pending.</p>':'')+'<button class="primary" data-a="mksf">Create semi finals</button>'}
-  else if(!f){h+='<p class="mute">Create the Final after both semi finals are finished.</p>';if(ADMIN)h+='<button class="primary" data-a="mkfinal">Create Final</button>'}
-  else h+='<p class="mute">Semi finals and Final are scheduled. See them in the matches below.</p>';
-  return h+'</div>'}
+function koCard(t){if(!t.groups||!ADMIN)return "";var sfs=t.matches.filter(function(m){return m.k=="sf"}),f=t.matches.filter(function(m){return m.k=="f"})[0];
+  if(!sfs.length)return '<div class="card"><button class="primary" style="margin-top:0" data-a="mksf">Create semi finals</button></div>';
+  if(!f)return '<div class="card"><button class="primary" style="margin-top:0" data-a="mkfinal">Create Final</button></div>';
+  return ""}
 function tieCard(m){if(!(ADMIN&&m.k&&m.S.done&&winIdx(m.S)<0))return "";
   return '<div class="card"><h2>Match tied</h2><p class="mute">Select the winner of this knockout match (after a super over or toss).</p><select id="wa"><option value="0">'+esc(m.S.t[0])+'</option><option value="1">'+esc(m.S.t[1])+'</option></select><button class="primary" data-a="setadv">Set winner</button>'+(m.adv?'<p class="mute">Current winner: '+esc(m.adv==m.ta?m.S.t[0]:m.S.t[1])+'</p>':'')+'</div>'}
 function toLocalIn(ts){var d=new Date(ts);d.setMinutes(d.getMinutes()-d.getTimezoneOffset());return d.toISOString().slice(0,16)}
@@ -290,7 +286,7 @@ function tourView(){
     if(!ADMIN){}else if(t.teams.length<2)h+='<div class="card mute">Add at least 2 teams before creating a match.</div>';
     else{
       var o=t.teams.map(function(x){return '<option value="'+x.id+'">'+esc(x.name)+(t.groups?' (Group '+GN[x.g||0]+')':'')+'</option>'}).join("");
-      h+='<div class="card"><h2>'+(t.groups?'Schedule group match':'Schedule match')+'</h2><label for="ma">Team 1</label><select id="ma">'+o+'</select><label for="mb">Team 2</label><select id="mb">'+o.replace('value="'+t.teams[1].id+'"','value="'+t.teams[1].id+'" selected')+'</select><label for="mo">Overs for this match</label><select id="mo">'+ovopts(t.ov)+'</select><label for="mw">Date and time</label><input id="mw" type="datetime-local"><button class="primary" data-a="newmatch">Schedule match</button><p class="mute">Once scheduled, the match appears as "Upcoming" for everyone. At match time, tap it to start scoring.</p></div>';
+      h+='<div class="card"><h2>'+(t.groups?'Schedule group match':'Schedule match')+'</h2><label for="ma">Team 1</label><select id="ma">'+o+'</select><label for="mb">Team 2</label><select id="mb">'+o.replace('value="'+t.teams[1].id+'"','value="'+t.teams[1].id+'" selected')+'</select><label for="mo">Overs for this match</label><select id="mo">'+ovopts(t.ov)+'</select><label for="mw">Date and time</label><input id="mw" type="datetime-local"><button class="primary" data-a="newmatch">Schedule match</button></div>';
     }
     var pend=t.matches.filter(function(m){return !m.S.done}).sort(function(x,y){return (x.when||x.ts||0)-(y.when||y.ts||0)}),fin=t.matches.filter(function(m){return m.S.done}).sort(function(x,y){return (y.when||y.ts||0)-(x.when||x.ts||0)});
     if(!t.matches.length)h+='<div class="card mute">No matches scheduled yet.</div>';
