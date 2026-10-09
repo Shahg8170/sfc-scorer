@@ -106,7 +106,7 @@ function save(){
   for(k in LAST)if(!(k in now)){up[k]=null;n++}
   if(!n)return;
   LAST=now;
-  FB.db.update(FB.db.ref(fdb),up).catch(function(e){alert("Save nahi hua: "+e.message)});
+  FB.db.update(FB.db.ref(fdb),up).catch(function(e){alert("Save failed: "+e.message)});
 }
 function byTs(a,b){return (a.ts||0)-(b.ts||0)}
 function rebuild(val){
@@ -143,28 +143,28 @@ function champCard(t){var c=champ(t);return c?'<div class="card mom"><h2>Champio
 function koCard(t){if(!t.groups)return "";var sfs=t.matches.filter(function(m){return m.k=="sf"}),f=t.matches.filter(function(m){return m.k=="f"})[0];
   var h='<div class="card"><h2>Semi Final &amp; Final</h2>';
   if(!sfs.length){var pend=t.matches.filter(function(m){return !m.k&&!m.S.done}).length;
-    h+='<p class="mute">Group matches ke baad: Group A ki 1st team vs Group B ki 2nd team, aur Group B ki 1st vs Group A ki 2nd. Dono jeetne wali teams Final khelain gi.</p>';
-    if(ADMIN)h+=(pend?'<p class="mute">'+pend+' group match abhi baqi hain.</p>':'')+'<button class="primary" data-a="mksf">Semi finals banayein</button>'}
-  else if(!f){h+='<p class="mute">Semi finals khatam hone ke baad Final banayein.</p>';if(ADMIN)h+='<button class="primary" data-a="mkfinal">Final banayein</button>'}
-  else h+='<p class="mute">Semi finals aur Final schedule ho chuke hain, neechay matches mein dekhein.</p>';
+    h+='<p class="mute">After the group matches: the 1st team of Group A plays the 2nd team of Group B, and the 1st team of Group B plays the 2nd team of Group A. The two winners play the Final.</p>';
+    if(ADMIN)h+=(pend?'<p class="mute">'+pend+' group match(es) still pending.</p>':'')+'<button class="primary" data-a="mksf">Create semi finals</button>'}
+  else if(!f){h+='<p class="mute">Create the Final after both semi finals are finished.</p>';if(ADMIN)h+='<button class="primary" data-a="mkfinal">Create Final</button>'}
+  else h+='<p class="mute">Semi finals and Final are scheduled. See them in the matches below.</p>';
   return h+'</div>'}
 function tieCard(m){if(!(ADMIN&&m.k&&m.S.done&&winIdx(m.S)<0))return "";
-  return '<div class="card"><h2>Match tie hua</h2><p class="mute">Knockout mein jeetne wali team chunein (super over ya toss ke baad).</p><select id="wa"><option value="0">'+esc(m.S.t[0])+'</option><option value="1">'+esc(m.S.t[1])+'</option></select><button class="primary" data-a="setadv">Winner set karein</button>'+(m.adv?'<p class="mute">Abhi winner: '+esc(m.adv==m.ta?m.S.t[0]:m.S.t[1])+'</p>':'')+'</div>'}
+  return '<div class="card"><h2>Match tied</h2><p class="mute">Select the winner of this knockout match (after a super over or toss).</p><select id="wa"><option value="0">'+esc(m.S.t[0])+'</option><option value="1">'+esc(m.S.t[1])+'</option></select><button class="primary" data-a="setadv">Set winner</button>'+(m.adv?'<p class="mute">Current winner: '+esc(m.adv==m.ta?m.S.t[0]:m.S.t[1])+'</p>':'')+'</div>'}
 function toLocalIn(ts){var d=new Date(ts);d.setMinutes(d.getMinutes()-d.getTimezoneOffset());return d.toISOString().slice(0,16)}
 function tblHtml(rows){var h='<table><tr><th>Team</th><th class="r">P</th><th class="r">W</th><th class="r">L</th><th class="r">Pts</th><th class="r">RR</th><th class="r">NRR</th></tr>';
   rows.forEach(function(a){h+='<tr><td><div style="display:flex;align-items:center;gap:6px">'+lg(a.t.logo,a.t.name,"s")+esc(a.t.name)+'</div></td><td class="r">'+a.p+'</td><td class="r">'+a.w+'</td><td class="r">'+a.l+'</td><td class="r"><b>'+a.pt+'</b></td><td class="r">'+a.rr.toFixed(2)+'</td><td class="r">'+(a.nrr>=0?"+":"")+a.nrr.toFixed(3)+'</td></tr>'});
   return h+'</table>'}
 function tableView(t){
-  var done=t.matches.some(function(m){return m.S.done&&!m.k}),note='<p class="mute">Jeet = 2 points, tie = 1 point. RR = team ka apna run rate. NRR = unka run rate minus opponents ka run rate (all out hone par poray overs ginay jatay hain).</p>';
+  var done=t.matches.some(function(m){return m.S.done&&!m.k}),note='<p class="mute">Win = 2 points, tie = 1 point. RR = run rate of the team. NRR = net run rate (own run rate minus the run rate of the opposition; if a team is all out, the full overs are counted).</p>';
   if(t.groups){var h=champCard(t);
-    [0,1].forEach(function(g){var rows=standings(t,g);h+='<div class="card"><h2>Group '+GN[g]+'</h2>'+(!rows.length?'<p class="mute">Is group mein abhi koi team nahi.</p>':!done?'<p class="mute">Abhi koi match khatam nahi hua.</p>'+rows.map(function(a){return '<div class="pl">'+esc(a.t.name)+'</div>'}).join(""):tblHtml(rows))+'</div>'});
-    return h+'<p class="mute">Har group ki top 2 teams Semi Final khelain gi.</p>'+note}
+    [0,1].forEach(function(g){var rows=standings(t,g);h+='<div class="card"><h2>Group '+GN[g]+'</h2>'+(!rows.length?'<p class="mute">No teams in this group yet.</p>':!done?'<p class="mute">No match has finished yet.</p>'+rows.map(function(a){return '<div class="pl">'+esc(a.t.name)+'</div>'}).join(""):tblHtml(rows))+'</div>'});
+    return h+'<p class="mute">The top 2 teams of each group play the Semi Finals.</p>'+note}
   var h2='<div class="card"><h2>Points table</h2>';
-  if(!done)return h2+'<p class="mute">Abhi koi match khatam nahi hua. Match poora hone par table ban jaye gi.</p></div>';
+  if(!done)return h2+'<p class="mute">No match has finished yet. The table will appear once a match is completed.</p></div>';
   return h2+tblHtml(standings(t))+note+'</div>'}
 function ovopts(d){return [3,4,5,6,7,8,10,12,15,20].map(function(n){return '<option'+(n==d?' selected':'')+'>'+n+'</option>'}).join("")}
 function started(m){return m.started!==false}
-function whenTxt(m){if(!m.when)return "Time set nahi";try{return new Date(m.when).toLocaleString([],{weekday:"short",day:"numeric",month:"short",hour:"numeric",minute:"2-digit"})}catch(e){return ""}}
+function whenTxt(m){if(!m.when)return "Time not set";try{return new Date(m.when).toLocaleString([],{weekday:"short",day:"numeric",month:"short",hour:"numeric",minute:"2-digit"})}catch(e){return ""}}
 function lines(v){return v.split("\n").map(function(x){return x.trim()}).filter(Boolean)}
 function mkS(A,B,ov,f){return{t:[A.name,B.name],lg:[A.logo||"",B.logo||""],ov:ov,pn:[pnames(A),pnames(B)],nb:false,pl:[Math.max(2,pnames(A).length),Math.max(2,pnames(B).length)],order:f==0?[0,1]:[1,0],i:0,target:0,done:"",pending:"",inn:[mkInn(),mkInn()]}}
 function mteams(m){var S=m.S;return lg(S.lg[0],S.t[0],"s")+lg(S.lg[1],S.t[1],"s")}
@@ -197,30 +197,30 @@ function statsView(t){
   var s=tst(t),h='',vals=function(o){return Object.keys(o).map(function(k){return o[k]})};
   var mot=vals(s.mot).sort(function(a,b){return b.p-a.p||b.w-a.w||b.r-a.r});
   var fin=t.matches.length>0&&t.matches.every(function(m){return m.S.done});
-  h+='<div class="card mom"><h2>'+(fin?"Man of the Tournament":"Man of the Tournament (abhi tak)")+'</h2>';
+  h+='<div class="card mom"><h2>'+(fin?"Man of the Tournament":"Man of the Tournament (so far)")+'</h2>';
   if(mot.length)h+='<div class="row"><b>'+esc(mot[0].n)+'</b><span class="mute">'+esc(mot[0].tm)+'</span></div><p class="mute" style="margin:6px 0 0">'+pline(mot[0])+' | '+mot[0].m+' match</p>';
-  else h+='<p class="mute">Abhi koi match khatam nahi hua.</p>';
-  h+='<p class="mute" style="margin:8px 0 0;font-size:12px">Points: 1 run = 1, four +1, six +2, wicket = 20, jeetne wali team ke khilari +5. Sab se zyada points wala khud select hota hai (final tab jab saray matches khatam hon).</p></div>';
+  else h+='<p class="mute">No match has finished yet.</p>';
+  h+='<p class="mute" style="margin:8px 0 0;font-size:12px">Points: 1 run = 1, four +1, six +2, wicket = 20, players of the winning team +5. The player with the most points is selected automatically (final once all matches are finished).</p></div>';
   var all=vals(s.all);
   var bats=all.filter(function(x){return x.b>0}).sort(function(a,b){return b.r-a.r||a.b-b.b}).slice(0,5);
   h+='<div class="card"><h2>Top 5 batters</h2>';
-  if(!bats.length)h+='<p class="mute">Abhi koi data nahi.</p>';
+  if(!bats.length)h+='<p class="mute">No data yet.</p>';
   else{h+='<table><tr><th>Player</th><th class="r">R</th><th class="r">B</th><th class="r">SR</th><th class="r">4s</th><th class="r">6s</th></tr>';
     bats.forEach(function(x,i){h+='<tr><td>'+(i+1)+'. '+esc(x.n)+'<br><span class="mute">'+esc(x.tm)+'</span></td><td class="r"><b>'+x.r+'</b></td><td class="r">'+x.b+'</td><td class="r">'+(x.r*100/x.b).toFixed(0)+'</td><td class="r">'+x.f+'</td><td class="r">'+x.s+'</td></tr>'});
     h+='</table>'}
   h+='</div>';
   var bw=all.filter(function(x){return x.bb>0}).sort(function(a,b){return b.w-a.w||a.br*b.bb-b.br*a.bb||b.bb-a.bb}).slice(0,5);
   h+='<div class="card"><h2>Top 5 bowlers</h2>';
-  if(!bw.length)h+='<p class="mute">Abhi koi data nahi.</p>';
+  if(!bw.length)h+='<p class="mute">No data yet.</p>';
   else{h+='<table><tr><th>Player</th><th class="r">W</th><th class="r">O</th><th class="r">R</th><th class="r">Econ</th></tr>';
     bw.forEach(function(x,i){h+='<tr><td>'+(i+1)+'. '+esc(x.n)+'<br><span class="mute">'+esc(x.tm)+'</span></td><td class="r"><b>'+x.w+'</b></td><td class="r">'+ov(x.bb)+'</td><td class="r">'+x.br+'</td><td class="r">'+(x.br*6/x.bb).toFixed(2)+'</td></tr>'});
     h+='</table>'}
-  h+='<p class="mute">Chal rahay matches ka data bhi shamil hai.</p></div>';
+  h+='<p class="mute">Includes matches in progress.</p></div>';
   return h}
 
 /* ---- About ---- */
 function aboutView(){
-  return '<button class="ghost" data-a="aback">Back</button><h1>About</h1><div class="card"><div class="brand"><img src="'+BRAND+'" alt=""><div><div class="num bn">SFC Scorer</div><div class="mute">Sports Fans Club</div></div></div><p>Live cricket scoring app: tournaments, fixtures, points table, scorecards aur player stats.</p><p style="margin-bottom:0"><span class="mute">App developer &amp; site owner</span><br><b style="font-size:20px">Rauf Ahmad Shah</b></p></div>'}
+  return '<button class="ghost" data-a="aback">Back</button><h1>About</h1><div class="card"><div class="brand"><img src="'+BRAND+'" alt=""><div><div class="num bn">SFC Scorer</div><div class="mute">Sports Fans Club</div></div></div><p>Live cricket scoring app: tournaments, fixtures, points table, scorecards and player stats.</p><p style="margin-bottom:0"><span class="mute">App developer &amp; site owner</span><br><b style="font-size:20px">Rauf Ahmad Shah</b></p></div>'}
 
 /* ---- Scorer access ---- */
 var RULES=`{
@@ -244,16 +244,16 @@ var RULES=`{
 function accMsg(t){ACCMSG=t;var e=$("anm");if(e)e.textContent=t}
 function accView(){
   var h='<button class="ghost" data-a="accback">Back</button><h1>Scorer access</h1>';
-  if(!ADMIN)return h+'<div class="card mute">Pehle scorer login karein.</div>';
+  if(!ADMIN)return h+'<div class="card mute">Please log in as a scorer first.</div>';
   var ids=Object.keys(ADMINS);
-  h+='<div class="card"><h2>Naya scorer add karein</h2><p class="mute">Jis ko scoring ki access deni hai us ka email aur password yahan se banayein, phir ye dono usay bhej dein. Wo header ke "Scorer login" se login kar ke scoring kar sakay ga.</p><label for="ane">Email</label><input id="ane" type="email" autocomplete="off"><label for="anp">Password (kam az kam 6 characters)</label><input id="anp" type="text" autocomplete="off"><button class="primary" data-a="newscorer">Access dein</button><p class="mute" id="anm">'+esc(ACCMSG)+'</p></div>';
+  h+='<div class="card"><h2>Add a new scorer</h2><p class="mute">Create an email and password here for the person you want to give scoring access to, then send both to them. They can log in with "Scorer login" in the header and start scoring.</p><label for="ane">Email</label><input id="ane" type="email" autocomplete="off"><label for="anp">Password (at least 6 characters)</label><input id="anp" type="text" autocomplete="off"><button class="primary" data-a="newscorer">Give access</button><p class="mute" id="anm">'+esc(ACCMSG)+'</p></div>';
   h+='<div class="card"><h2>Scorers</h2>';
-  if(ADMERR)h+='<p class="mute">List load nahi hui ('+esc(ADMERR)+'). Neechay di gayi security rules lagayein.</p>';
-  else if(!ids.length)h+='<p class="mute">Abhi list khali hai.</p>';
-  ids.forEach(function(id){h+='<div class="row pl"><span>'+esc(ADMINS[id])+(id==MYUID?' (aap)':'')+'</span>'+(id==MYUID?'':'<button class="danger" data-a="rmscorer" data-id="'+esc(id)+'">Access hatayein</button>')+'</div>'});
-  if(!ADMERR&&MYUID&&!ADMINS[MYUID])h+='<button class="ex" data-a="selfreg" style="margin-top:10px;width:100%">Mujhe (owner) ko list mein add karein</button>';
-  h+='<p class="mute">Access hatane se us ki likhne ki ijazat server par khatam ho jati hai (rules lagne ke baad). Account Firebase Console &gt; Authentication se bhi delete kar saktay hain.</p></div>';
-  h+='<details class="card"><summary><b>Security rules (aik dafa lagayein)</b></summary><p class="mute">Firebase Console &gt; Realtime Database &gt; Rules mein ye paste kar ke Publish karein, aur foran baad yahan "Mujhe (owner) ko list mein add karein" dabayein. Is ke baad sirf list wale scorers likh saktay hain, baqi sab sirf dekh saktay hain.</p><pre>'+esc(RULES)+'</pre></details>';
+  if(ADMERR)h+='<p class="mute">Could not load the list ('+esc(ADMERR)+'). Please apply the security rules shown below.</p>';
+  else if(!ids.length)h+='<p class="mute">The list is empty.</p>';
+  ids.forEach(function(id){h+='<div class="row pl"><span>'+esc(ADMINS[id])+(id==MYUID?' (you)':'')+'</span>'+(id==MYUID?'':'<button class="danger" data-a="rmscorer" data-id="'+esc(id)+'">Remove access</button>')+'</div>'});
+  if(!ADMERR&&MYUID&&!ADMINS[MYUID])h+='<button class="ex" data-a="selfreg" style="margin-top:10px;width:100%">Add me (owner) to the list</button>';
+  h+='<p class="mute">Removing access stops that person from writing data on the server (once the security rules are applied). You can also delete the account in Firebase Console &gt; Authentication.</p></div>';
+  h+='<details class="card"><summary><b>Security rules (apply once)</b></summary><p class="mute">Paste this into Firebase Console &gt; Realtime Database &gt; Rules and click Publish, then immediately tap "Add me (owner) to the list" here. After that only the scorers in the list can write; everyone else can only view.</p><pre>'+esc(RULES)+'</pre></details>';
   return h}
 
 function home(){
@@ -261,47 +261,48 @@ function home(){
   DB.tours.forEach(function(t){t.matches.forEach(function(m){if(m.S.done)return;if(m.S.inn[0].ord.length)live.push({t:t,m:m});else up.push({t:t,m:m})})});
   up.sort(function(a,b){return (a.m.when||a.m.ts||0)-(b.m.when||b.m.ts||0)});
   if(live.length){h+='<h1>Live matches</h1>';live.forEach(function(x){var S=x.m.S,c=S.inn[S.i],b=S.order[S.i];
-    h+='<div class="card"><div class="row"><div class="row" style="justify-content:flex-start">'+lg(S.lg[b],S.t[b],"s")+'<div><b>'+esc(S.t[0])+' vs '+esc(S.t[1])+'</b><br><span class="mute">'+esc(x.t.name)+'</span></div></div><button data-a="openlive" data-t="'+x.t.id+'" data-id="'+x.m.id+'">Dekhein</button></div><div class="num" style="font-size:30px;margin-top:6px">'+esc(S.t[b])+' '+c.r+'/'+c.w+' <span class="mute" style="font-size:18px">('+ov(c.b)+' ov)</span></div></div>'})}
+    h+='<div class="card"><div class="row"><div class="row" style="justify-content:flex-start">'+lg(S.lg[b],S.t[b],"s")+'<div><b>'+esc(S.t[0])+' vs '+esc(S.t[1])+'</b><br><span class="mute">'+esc(x.t.name)+'</span></div></div><button data-a="openlive" data-t="'+x.t.id+'" data-id="'+x.m.id+'">View</button></div><div class="num" style="font-size:30px;margin-top:6px">'+esc(S.t[b])+' '+c.r+'/'+c.w+' <span class="mute" style="font-size:18px">('+ov(c.b)+' ov)</span></div></div>'})}
   if(up.length){h+='<h1>Upcoming matches</h1>';up.slice(0,8).forEach(function(x){
     h+='<div class="card tap" data-a="openlive" data-t="'+x.t.id+'" data-id="'+x.m.id+'"><div class="row"><div class="row" style="justify-content:flex-start">'+mteams(x.m)+'<div><b>'+esc(x.m.S.t[0])+' vs '+esc(x.m.S.t[1])+'</b><br><span class="mute">'+esc(x.t.q?"Single match":x.t.name)+' | '+esc(whenTxt(x.m))+'</span></div></div><span class="mute">&rsaquo;</span></div></div>'})}
-  h+='<div class="card row"><div><h2>Doosri games</h2><span class="mute">Volleyball, Snooker, Badminton, Table Tennis, Ludo, Carrom, Foosball</span></div><a href="sports.html"><button>Kholein</button></a></div>';
+  h+='<div class="card row"><div><h2>Other games</h2><span class="mute">Volleyball, Snooker, Badminton, Table Tennis, Ludo, Carrom, Foosball</span></div><a href="sports.html"><button>Open</button></a></div>';
   h+='<h1>Tournaments</h1>';
-  if(!tours.length)h+='<div class="card mute">'+(ADMIN?'Pehla tournament neechay banayein.':'Abhi koi tournament nahi hai.')+'</div>';
+  if(!tours.length)h+='<div class="card mute">'+(ADMIN?'Create your first tournament below.':'No tournaments yet.')+'</div>';
   tours.forEach(function(t){h+='<div class="card">'+(t.banner?'<img class="ban" style="margin-top:0" src="'+t.banner+'" alt="">':'')+'<div class="row"><div class="row" style="justify-content:flex-start">'+lg(t.logo,t.name)+'<div><h2 style="margin:0">'+esc(t.name)+'</h2><span class="mute">'+t.teams.length+' teams, '+t.matches.length+' matches, '+t.ov+' overs</span></div></div><div><button data-a="open" data-id="'+t.id+'">Open</button>'+(ADMIN?'<button class="danger" data-a="deltour" data-id="'+t.id+'">Delete</button>':'')+'</div></div></div>'});
-  if(ADMIN&&!CREATE)h+='<div class="card"><h2>Naya banayein</h2><div class="row" style="gap:8px"><button class="primary" style="margin:0" data-a="cr" data-v="tour">Tournament</button><button class="primary" style="margin:0" data-a="cr" data-v="quick">Single match</button></div></div>';
-  if(ADMIN&&CREATE=="quick")h+='<div class="card"><h2>Single match</h2><label for="qa">Team 1</label><input id="qa"><label for="qpa">Team 1 players (har line mein aik naam, optional)</label><textarea id="qpa" style="min-height:70px"></textarea><label for="qb">Team 2</label><input id="qb"><label for="qpb">Team 2 players (optional)</label><textarea id="qpb" style="min-height:70px"></textarea><label for="qo">Overs</label><select id="qo">'+ovopts(6)+'</select><label for="qf">Batting first</label><select id="qf"><option value="0">Team 1</option><option value="1">Team 2</option></select><button class="primary" data-a="newquick">Start match</button><button class="ghost" data-a="cr" data-v="" style="margin-top:8px">Cancel</button></div>';
-  if(ADMIN&&CREATE=="tour")h+='<div class="card"><h2>New tournament</h2><label for="tn">Tournament name</label><input id="tn" placeholder="Ramzan Cup 2026"><label for="to">Overs per match</label><select id="to"><option>5</option><option selected>6</option><option>7</option><option>8</option><option>10</option></select><label for="tg">Groups</label><select id="tg"><option value="0">Koi group nahi</option><option value="2">2 groups (A, B) + Semi Final + Final</option></select><label for="tlg">Tournament logo (optional)</label><input id="tlg" type="file" accept="image/*"><div id="tlp" style="margin-top:8px"></div><label for="tbn">Banner (optional, chori tasveer behtar)</label><input id="tbn" type="file" accept="image/*"><div id="tbp"></div><button class="primary" data-a="newtour">Create tournament</button><button class="ghost" data-a="cr" data-v="" style="margin-top:8px">Cancel</button></div>';
+  if(ADMIN&&!CREATE)h+='<div class="card"><h2>Create new</h2><div class="row" style="gap:8px"><button class="primary" style="margin:0" data-a="cr" data-v="tour">Tournament</button><button class="primary" style="margin:0" data-a="cr" data-v="quick">Single match</button></div></div>';
+  if(ADMIN&&CREATE=="quick")h+='<div class="card"><h2>Single match</h2><label for="qa">Team 1</label><input id="qa"><label for="qpa">Team 1 players (one name per line, optional)</label><textarea id="qpa" style="min-height:70px"></textarea><label for="qb">Team 2</label><input id="qb"><label for="qpb">Team 2 players (optional)</label><textarea id="qpb" style="min-height:70px"></textarea><label for="qo">Overs</label><select id="qo">'+ovopts(6)+'</select><label for="qf">Batting first</label><select id="qf"><option value="0">Team 1</option><option value="1">Team 2</option></select><button class="primary" data-a="newquick">Start match</button><button class="ghost" data-a="cr" data-v="" style="margin-top:8px">Cancel</button></div>';
+  if(ADMIN&&CREATE=="tour")h+='<div class="card"><h2>New tournament</h2><label for="tn">Tournament name</label><input id="tn" placeholder="Summer Cup 2026"><label for="to">Overs per match</label><select id="to"><option>5</option><option selected>6</option><option>7</option><option>8</option><option>10</option></select><label for="tg">Groups</label><select id="tg"><option value="0">No groups</option><option value="2">2 groups (A, B) + Semi Final + Final</option></select><label for="tlg">Tournament logo (optional)</label><input id="tlg" type="file" accept="image/*"><div id="tlp" style="margin-top:8px"></div><label for="tbn">Banner (optional, a wide image works best)</label><input id="tbn" type="file" accept="image/*"><div id="tbp"></div><button class="primary" data-a="newtour">Create tournament</button><button class="ghost" data-a="cr" data-v="" style="margin-top:8px">Cancel</button></div>';
   if(quick.length){h+='<h1>Single matches</h1>';quick.slice().sort(byTs).reverse().forEach(function(t){var m=t.matches[0];if(!m)return;var S=m.S;
     h+='<div class="card tap" data-a="openlive" data-t="'+t.id+'" data-id="'+m.id+'"><div class="row"><div class="row" style="justify-content:flex-start">'+mteams(m)+'<div><b>'+esc(S.t[0])+' vs '+esc(S.t[1])+'</b><br><span class="mute">'+esc(S.done||"LIVE")+' | '+S.ov+' overs</span></div></div>'+(ADMIN?'<button class="danger" data-a="deltour" data-id="'+t.id+'">Delete</button>':'')+'</div></div>'})}
   if(ADMIN){
     
-    h+='<div class="card row"><div><h2>Scorer access</h2><span class="mute">Doosray logon ko scoring ki access dein</span></div><button data-a="acc">Open</button></div>'}
+    h+='<div class="card row"><div><h2>Scorer access</h2><span class="mute">Give other people scoring access</span></div><button data-a="acc">Open</button></div>'}
   return h}
 
 function tourView(){
   var t=tour(),h='<button class="ghost" data-a="home">Back to tournaments</button>'+(t.banner?'<img class="ban" src="'+t.banner+'" alt="">':'')+'<div class="row" style="justify-content:flex-start;margin:6px 0 12px">'+(t.logo?lg(t.logo,t.name):'')+'<h1 style="margin:0">'+esc(t.name)+'</h1></div>';
-  if(ADMIN)h+='<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px"><button class="ex" data-a="tourlogo">Logo '+(t.logo?'badlein':'lagayein')+'</button><button class="ex" data-a="tourban">Banner '+(t.banner?'badlein':'lagayein')+'</button>'+(t.logo?'<button class="danger" data-a="rmlogo">Logo hatayein</button>':'')+(t.banner?'<button class="danger" data-a="rmban">Banner hatayein</button>':'')+'</div>';
+  if(ADMIN)h+='<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px"><button class="ex" data-a="tourlogo">'+(t.logo?'Change':'Add')+' logo</button><button class="ex" data-a="tourban">'+(t.banner?'Change':'Add')+' banner</button>'+(t.logo?'<button class="danger" data-a="rmlogo">Remove logo</button>':'')+(t.banner?'<button class="danger" data-a="rmban">Remove banner</button>':'')+'</div>';
   h+='<div class="tabs"><button data-a="tab" data-v="teams" class="'+(TAB=="teams"?"on":"")+'">Teams</button><button data-a="tab" data-v="matches" class="'+(TAB=="matches"?"on":"")+'">Matches</button><button data-a="tab" data-v="table" class="'+(TAB=="table"?"on":"")+'">Table</button><button data-a="tab" data-v="stats" class="'+(TAB=="stats"?"on":"")+'">Stats</button></div>';
   if(TAB=="teams"){
-    (t.groups?t.teams.slice().sort(function(a,b){return (a.g||0)-(b.g||0)}):t.teams).forEach(function(x){h+='<div class="card"><div class="row"><div class="row" style="justify-content:flex-start">'+lg(x.logo,x.name)+'<div><h2 style="margin:0">'+esc(x.name)+'</h2><span class="mute">'+x.players.length+' players'+(t.groups?' | Group '+GN[x.g||0]:'')+'</span></div></div><div><button data-a="team" data-id="'+x.id+'">Players</button>'+(ADMIN&&t.groups?'<button class="ex" data-a="swapg" data-id="'+x.id+'">Group '+GN[1-(x.g||0)]+' mein</button>':'')+(ADMIN?'<button class="danger" data-a="delteam" data-id="'+x.id+'">Delete</button>':'')+'</div></div><p class="mute" style="margin:8px 0 0">'+x.players.map(esc).join(", ")+'</p></div>'});
-    if(ADMIN)h+='<div class="card"><h2>Add team</h2><label for="tmn">Team name</label><input id="tmn"><label for="tml">Team logo (optional)</label><input id="tml" type="file" accept="image/*"><div id="lp" style="margin-top:8px"></div>'+(t.groups?'<label for="tmg">Group chunein</label><select id="tmg"><option value="0">Group A</option><option value="1">Group B</option></select>':'')+'<label for="tmp">Players (har line mein aik naam)</label><textarea id="tmp" placeholder="Ali&#10;Usman&#10;Bilal"></textarea><button class="primary" data-a="addteam">Add team</button></div>';
+    (t.groups?t.teams.slice().sort(function(a,b){return (a.g||0)-(b.g||0)}):t.teams).forEach(function(x){h+='<div class="card"><div class="row"><div class="row" style="justify-content:flex-start">'+lg(x.logo,x.name)+'<div><h2 style="margin:0">'+esc(x.name)+'</h2><span class="mute">'+x.players.length+' players'+(t.groups?' | Group '+GN[x.g||0]:'')+'</span></div></div><div><button data-a="team" data-id="'+x.id+'">Players</button>'+(ADMIN&&t.groups?'<button class="ex" data-a="swapg" data-id="'+x.id+'">Move to Group '+GN[1-(x.g||0)]+'</button>':'')+(ADMIN?'<button class="danger" data-a="delteam" data-id="'+x.id+'">Delete</button>':'')+'</div></div><p class="mute" style="margin:8px 0 0">'+x.players.map(esc).join(", ")+'</p></div>'});
+    if(ADMIN)h+='<div class="card"><h2>Add team</h2><label for="tmn">Team name</label><input id="tmn"><label for="tml">Team logo (optional)</label><input id="tml" type="file" accept="image/*"><div id="lp" style="margin-top:8px"></div>'+(t.groups?'<label for="tmg">Group</label><select id="tmg"><option value="0">Group A</option><option value="1">Group B</option></select>':'')+'<label for="tmp">Players (one name per line)</label><textarea id="tmp" placeholder="Ali&#10;Usman&#10;Bilal"></textarea><button class="primary" data-a="addteam">Add team</button></div>';
   }else if(TAB=="table"){h+=tableView(t)}else if(TAB=="stats"){h+=statsView(t)}else{
     h+=champCard(t)+koCard(t);
-    if(!ADMIN){}else if(t.teams.length<2)h+='<div class="card mute">Match banane ke liye pehle kam az kam 2 teams add karein.</div>';
+    if(!ADMIN){}else if(t.teams.length<2)h+='<div class="card mute">Add at least 2 teams before creating a match.</div>';
     else{
       var o=t.teams.map(function(x){return '<option value="'+x.id+'">'+esc(x.name)+(t.groups?' (Group '+GN[x.g||0]+')':'')+'</option>'}).join("");
-      h+='<div class="card"><h2>'+(t.groups?'Group match':'Match')+' schedule karein</h2><label for="ma">Team 1</label><select id="ma">'+o+'</select><label for="mb">Team 2</label><select id="mb">'+o.replace('value="'+t.teams[1].id+'"','value="'+t.teams[1].id+'" selected')+'</select><label for="mo">Overs is match ke</label><select id="mo">'+ovopts(t.ov)+'</select><label for="mw">Date aur time</label><input id="mw" type="datetime-local"><button class="primary" data-a="newmatch">Match schedule karein</button><p class="mute">Schedule hote hi match sab ko "Upcoming" mein nazar aye ga. Match ke waqt us par tap kar ke scoring shuru karein.</p></div>';
+      h+='<div class="card"><h2>'+(t.groups?'Schedule group match':'Schedule match')+'</h2><label for="ma">Team 1</label><select id="ma">'+o+'</select><label for="mb">Team 2</label><select id="mb">'+o.replace('value="'+t.teams[1].id+'"','value="'+t.teams[1].id+'" selected')+'</select><label for="mo">Overs for this match</label><select id="mo">'+ovopts(t.ov)+'</select><label for="mw">Date and time</label><input id="mw" type="datetime-local"><button class="primary" data-a="newmatch">Schedule match</button><p class="mute">Once scheduled, the match appears as "Upcoming" for everyone. At match time, tap it to start scoring.</p></div>';
     }
     var pend=t.matches.filter(function(m){return !m.S.done}).sort(function(x,y){return (x.when||x.ts||0)-(y.when||y.ts||0)}),fin=t.matches.filter(function(m){return m.S.done}).sort(function(x,y){return (y.when||y.ts||0)-(x.when||x.ts||0)});
-    if(!t.matches.length)h+='<div class="card mute">Abhi koi match schedule nahi hua.</div>';
-    pend.concat(fin).forEach(function(m){var S=m.S,st=S.done||(!started(m)?"Upcoming":(S.inn[0].ord.length?"LIVE":"Shuru hone wala"));
+    if(!t.matches.length)h+='<div class="card mute">No matches scheduled yet.</div>';
+    pend.concat(fin).forEach(function(m){var S=m.S,st=S.done||(!started(m)?"Upcoming":(S.inn[0].ord.length?"LIVE":"Starting soon"));
       h+='<div class="card tap" data-a="openmatch" data-id="'+m.id+'"><div class="row"><div class="row" style="justify-content:flex-start">'+mteams(m)+'<div><b>'+esc(S.t[0])+' vs '+esc(S.t[1])+'</b><br><span class="mute">'+(m.lbl?esc(m.lbl)+' | ':'')+esc(st)+(m.when&&!S.done?' | '+esc(whenTxt(m)):'')+'</span></div></div>'+(ADMIN?'<button class="danger" data-a="delmatch" data-id="'+m.id+'">Delete</button>':'')+'</div></div>'});
   }
   return h}
 
 function pnames(t){return t.players.length?t.players.slice():[1,2,3,4,5,6,7,8].map(function(i){return "Player "+i})}
 function mkInn(){return{r:0,w:0,b:0,ol:[],last:null,bt:{},bo:[],ord:[],bl:{},q:["openers"],st:-1,ns:-1,bw:-1,pbw:-1}}
-function fix(S){
+function conv(x){if(!x)return x;return String(x).replace(/ jeet gaya, (\d+) wicket se$/,function(_,n){return " won by "+n+" wicket"+(n==1?"":"s")}).replace(/ jeet gaya, (\d+) run se$/,function(_,n){return " won by "+n+" run"+(n==1?"":"s")}).replace(/^Match tie$/,"Match tied").replace(/ ko (\d+) runs chahiye\.$/,function(_,n){return " need "+n+" runs to win."})}
+function fix(S){S.done=conv(S.done);S.pending=conv(S.pending);
   S.t=arr(S.t);S.lg=arr(S.lg);S.order=arr(S.order);S.pl=arr(S.pl);S.inn=arr(S.inn);if(S.pn)S.pn=arr(S.pn).map(arr);
   S.inn.forEach(function(c){c.ol=arr(c.ol);c.ord=arr(c.ord);c.bo=arr(c.bo);c.q=arr(c.q);if(c.bt)c.bt=obj(c.bt);if(c.bl)c.bl=obj(c.bl);if(c.last===undefined)c.last=null;if(c.last)c.last=arr(c.last)});
   if(!S.pn)S.pn=[0,1].map(function(k){var a=[];for(var i=0;i<S.pl[k];i++)a.push("Player "+(i+1));return a});
@@ -322,15 +323,15 @@ function howtxt(S,bo,x){
   return "run out"+(f?" ("+f+")":"")}
 function wkUI(S,c){
   var bi=S.order[S.i],O=S.pn[1-bi],B=S.pn[bi],hws=S.nb?["Run out"]:["Bowled","Caught","LBW","Stumped","Run out","Hit wicket"];
-  var h='<div class="card"><h2>Wicket: kaise out hua?</h2><label for="hw">Out kaise hua</label><select id="hw">'+hws.map(function(x){return '<option>'+x+'</option>'}).join("")+'</select>';
-  h+='<div id="rowf" class="'+(S.nb?"":"hide")+'"><label for="hf">Fielder / keeper (optional)</label><select id="hf"><option value="">(naam nahi)</option>'+O.map(function(n,i){return '<option value="'+i+'">'+esc(n)+'</option>'}).join("")+'</select></div>';
-  h+='<div id="rowb" class="'+(S.nb?"":"hide")+'"><label for="hb">Kaun out hua</label><select id="hb"><option value="0">Striker: '+esc(B[c.st])+'</option><option value="1">Non-striker: '+esc(B[c.ns])+'</option></select><label for="hr">Out hone se pehle kitnay runs mukammal</label><select id="hr"><option>0</option><option>1</option><option>2</option><option>3</option></select></div>';
+  var h='<div class="card"><h2>Wicket: how was the batter out?</h2><label for="hw">Dismissal type</label><select id="hw">'+hws.map(function(x){return '<option>'+x+'</option>'}).join("")+'</select>';
+  h+='<div id="rowf" class="'+(S.nb?"":"hide")+'"><label for="hf">Fielder / keeper (optional)</label><select id="hf"><option value="">(no name)</option>'+O.map(function(n,i){return '<option value="'+i+'">'+esc(n)+'</option>'}).join("")+'</select></div>';
+  h+='<div id="rowb" class="'+(S.nb?"":"hide")+'"><label for="hb">Who is out</label><select id="hb"><option value="0">Striker: '+esc(B[c.st])+'</option><option value="1">Non-striker: '+esc(B[c.ns])+'</option></select><label for="hr">Runs completed before the run out</label><select id="hr"><option>0</option><option>1</option><option>2</option><option>3</option></select></div>';
   return h+'<button class="primary" data-a="wkok">Wicket confirm</button><button class="ghost" data-a="wkno" style="margin-top:8px;width:100%">Cancel</button></div>'}
 function setupUI(S,c){
   var bi=S.order[S.i],B=S.pn[bi],O=S.pn[1-bi],k=c.q[0],h='<div class="card">';
-  if(k=="openers")h+='<h2>Innings shuru</h2>'+sel("sst","Striker (facing)",B,[],0)+sel("sns","Non-striker",B,[],1)+sel("sbw","Pehla bowler ("+esc(S.t[1-bi])+")",O,[],0);
-  else if(k=="bowler")h+='<h2>Naya over</h2>'+sel("sbw","Bowler chunein",O,[c.pbw],-1);
-  else h+='<h2>Wicket! Naya batsman</h2>'+sel("snb","Batsman chunein",B,Object.keys(c.bt).map(Number),-1);
+  if(k=="openers")h+='<h2>Start innings</h2>'+sel("sst","Striker (facing)",B,[],0)+sel("sns","Non-striker",B,[],1)+sel("sbw","Opening bowler ("+esc(S.t[1-bi])+")",O,[],0);
+  else if(k=="bowler")h+='<h2>New over</h2>'+sel("sbw","Select bowler",O,[c.pbw],-1);
+  else h+='<h2>Wicket! New batter</h2>'+sel("snb","Select batter",B,Object.keys(c.bt).map(Number),-1);
   h+='<button class="primary" data-a="setup">Confirm</button>';
   if(H.length)h+='<button class="ghost" data-a="undo" style="margin-top:8px">Undo last ball</button>';
   return h+'</div>'}
@@ -347,8 +348,8 @@ function card(S){
   }
   return h+'</details>'}
 function notStarted(m){var S=m.S,h='<button class="ghost" data-a="backm">'+(tour().q?"Back":"Back to matches")+'</button>'+(m.lbl?'<p style="margin:0 0 8px"><b>'+esc(m.lbl)+'</b></p>':'')+'<div class="board"><div class="row"><span class="team">'+lg(S.lg[0],S.t[0],"s")+esc(S.t[0])+'</span><span class="live" style="background:var(--tape);color:#16221C">UPCOMING</span></div><div class="row" style="margin-top:8px"><span class="team">'+lg(S.lg[1],S.t[1],"s")+esc(S.t[1])+'</span></div><div class="sub" style="margin-top:10px">'+esc(whenTxt(m))+' | '+S.ov+' overs</div></div>';
-  if(ADMIN)h+='<div class="card"><h2>Scoring shuru karein</h2><label for="mf">Batting first (toss)</label><select id="mf"><option value="0">'+esc(S.t[0])+'</option><option value="1">'+esc(S.t[1])+'</option></select><button class="primary" data-a="startm">Start scoring</button></div><div class="card"><h2>Date aur time</h2><input id="mwe" type="datetime-local" value="'+(m.when?toLocalIn(m.when):'')+'"><button class="ex" style="width:100%;margin-top:10px" data-a="setwhen">Time save karein</button></div>';
-  else h+='<div class="card mute">Match abhi shuru nahi hua. Shuru hone par yahan live score nazar aye ga.</div>';
+  if(ADMIN)h+='<div class="card"><h2>Ready to score?</h2><label for="mf">Batting first (toss)</label><select id="mf"><option value="0">'+esc(S.t[0])+'</option><option value="1">'+esc(S.t[1])+'</option></select><button class="primary" data-a="startm">Start scoring</button></div><div class="card"><h2>Date and time</h2><input id="mwe" type="datetime-local" value="'+(m.when?toLocalIn(m.when):'')+'"><button class="ex" style="width:100%;margin-top:10px" data-a="setwhen">Save time</button></div>';
+  else h+='<div class="card mute">The match has not started yet. The live score will appear here once it starts.</div>';
   return h}
 function matchView(){
   var m=ms();if(!started(m))return notStarted(m);
@@ -363,11 +364,11 @@ function matchView(){
     if(c.bw>=0){var bl=c.bl[c.bw];h+='<div class="row pl sub"><span>Bowler: '+esc(S.pn[1-b][c.bw])+'</span><span class="num">'+ov(bl.b)+' ov, '+bl.r+' r, '+bl.w+' w</span></div>'}
   }
   if(S.i==1){var f=S.inn[0],fb=S.order[0];h+='<div class="sub" style="margin-top:6px">'+esc(S.t[fb])+': '+f.r+'/'+f.w+' ('+ov(f.b)+')</div>'}
-  h+='<div class="balls">'+list.map(function(x){return '<span class="b '+(x.c||"")+'">'+x.t+'</span>'}).join("")+'</div><div class="msg">'+esc(S.done||S.pending||(S.nb?"No ball: ab runs dabayein (0 bhi)":""))+'</div></div>';
+  h+='<div class="balls">'+list.map(function(x){return '<span class="b '+(x.c||"")+'">'+x.t+'</span>'}).join("")+'</div><div class="msg">'+esc(S.done||S.pending||(S.nb?"No ball: now tap the runs (0 is allowed)":""))+'</div></div>';
   if(ADMIN&&!S.done){
     if(c.q.length)h+=setupUI(S,c);
     else if(WKO)h+=wkUI(S,c);
-    else h+='<div class="grid"><button data-a="run" data-r="0">0</button><button data-a="run" data-r="1">1</button><button data-a="run" data-r="2">2</button><button data-a="run" data-r="3">3</button><button data-a="run" data-r="4" class="g4">4</button><button data-a="run" data-r="6" class="g6">6</button><button data-a="wk" class="gw">W</button><button data-a="undo" class="ex">Undo</button><button data-a="wd" class="ex" style="grid-column:span 2">Wide +1</button><button data-a="nb" class="'+(S.nb?"g4":"ex")+'" style="grid-column:span 2">No ball +1</button><button data-a="swap" class="ex" style="grid-column:span 4">Swap strike (striker aur non-striker badlein)</button></div><p class="small">No ball: pehle No ball dabayein, phir runs (0 bhi dabayein).</p>';
+    else h+='<div class="grid"><button data-a="run" data-r="0">0</button><button data-a="run" data-r="1">1</button><button data-a="run" data-r="2">2</button><button data-a="run" data-r="3">3</button><button data-a="run" data-r="4" class="g4">4</button><button data-a="run" data-r="6" class="g6">6</button><button data-a="wk" class="gw">W</button><button data-a="undo" class="ex">Undo</button><button data-a="wd" class="ex" style="grid-column:span 2">Wide +1</button><button data-a="nb" class="'+(S.nb?"g4":"ex")+'" style="grid-column:span 2">No ball +1</button><button data-a="swap" class="ex" style="grid-column:span 4">Swap strike (switch striker and non-striker)</button></div><p class="small">No ball: tap No ball first, then the runs (0 is allowed).</p>';
   }
   return h+momCard(S)+tieCard(m)+card(S)}
 
@@ -383,11 +384,11 @@ function pst(t,team){var m={};
   return m}
 function teamView(){
   var t=tour(),tm=team(TM);padj(tm);var st=pst(t,tm);
-  var h='<button class="ghost" data-a="backt">Back to teams</button><div class="row" style="justify-content:flex-start;margin:6px 0 12px">'+lg(tm.logo,tm.name)+'<h1 style="margin:0">'+esc(tm.name)+'</h1></div>'+(ADMIN?'<button class="ex" data-a="tlogo" style="margin-bottom:12px">Team logo badlein</button>':'');
+  var h='<button class="ghost" data-a="backt">Back to teams</button><div class="row" style="justify-content:flex-start;margin:6px 0 12px">'+lg(tm.logo,tm.name)+'<h1 style="margin:0">'+esc(tm.name)+'</h1></div>'+(ADMIN?'<button class="ex" data-a="tlogo" style="margin-bottom:12px">Change team logo</button>':'');
   tm.players.forEach(function(n,i){var s=st[n],l;
-    if(s)l='Runs '+s.r+' ('+s.b+' balls), 4s '+s.f+', 6s '+s.s+' | Wickets '+s.w+(s.bb?' ('+ov(s.bb)+' ov)':'');else l='Abhi koi match nahi khela';
-    h+='<div class="card"><div class="row" style="justify-content:flex-start">'+lg(tm.pp[i],n)+'<div><b>'+esc(n)+'</b><br><span class="mute">'+l+'</span></div></div>'+(ADMIN?'<div style="margin-top:8px"><button data-a="pphoto" data-i="'+i+'">Photo</button> <button class="danger" data-a="delplayer" data-i="'+i+'">Hatayein</button></div>':'')+'</div>'});
-  if(ADMIN)h+='<div class="card"><h2>Player add karein</h2><label for="npn">Naam</label><input id="npn"><label for="npf">Photo (optional)</label><input id="npf" type="file" accept="image/*"><div id="npp" style="margin-top:8px"></div><button class="primary" data-a="addplayer">Add player</button></div>';
+    if(s)l='Runs '+s.r+' ('+s.b+' balls), 4s '+s.f+', 6s '+s.s+' | Wickets '+s.w+(s.bb?' ('+ov(s.bb)+' ov)':'');else l='No match played yet';
+    h+='<div class="card"><div class="row" style="justify-content:flex-start">'+lg(tm.pp[i],n)+'<div><b>'+esc(n)+'</b><br><span class="mute">'+l+'</span></div></div>'+(ADMIN?'<div style="margin-top:8px"><button data-a="pphoto" data-i="'+i+'">Photo</button> <button class="danger" data-a="delplayer" data-i="'+i+'">Remove</button></div>':'')+'</div>'});
+  if(ADMIN)h+='<div class="card"><h2>Add player</h2><label for="npn">Name</label><input id="npn"><label for="npf">Photo (optional)</label><input id="npf" type="file" accept="image/*"><div id="npp" style="margin-top:8px"></div><button class="primary" data-a="addplayer">Add player</button></div>';
   return h}
 function standings(t,g){
   var R={};t.teams.forEach(function(x){if(g!==undefined&&(x.g||0)!=g)return;R[x.name]={t:x,p:0,w:0,l:0,d:0,pt:0,rs:0,bf:0,rc:0,bb:0}});
@@ -411,9 +412,9 @@ document.addEventListener("change",function(e){var el=e.target,f=el.files&&el.fi
 function show(){
   var y=window.scrollY,h;
   if(ABOUT)h=aboutView();
-  else if(!FB&&!READY)h='<div class="card"><h2>Connect nahi ho saka</h2><p class="mute">Internet check karein aur page dobara kholein.</p></div>';
+  else if(!FB&&!READY)h='<div class="card"><h2>Could not connect</h2><p class="mute">Check your internet connection and reload the page.</p></div>';
   else if(ERR)h='<div class="card"><h2>Masla</h2><p class="mute">'+esc(ERR)+'</p></div>';
-  else if(!READY)h='<div class="card"><p class="mute">Load ho raha hai...</p></div>';
+  else if(!READY)h='<div class="card"><p class="mute">Loading...</p></div>';
   else if(LOGINV)h=loginView();
   else if(ACC)h=accView();
   else{
@@ -427,10 +428,10 @@ function show(){
 
 function endInn(S){
   var c=S.inn[S.i],lim=S.ov*6,allOut=S.pl[S.order[S.i]]-1;
-  if(S.i==0){if(c.b>=lim||c.w>=allOut){S.i=1;S.target=c.r+1;S.pending="Innings break. "+S.t[S.order[1]]+" ko "+S.target+" runs chahiye."}}
+  if(S.i==0){if(c.b>=lim||c.w>=allOut){S.i=1;S.target=c.r+1;S.pending="Innings break. "+S.t[S.order[1]]+" need "+S.target+" runs to win."}}
   else{
-    if(c.r>=S.target)S.done=S.t[S.order[1]]+" jeet gaya, "+(allOut-c.w)+" wicket se";
-    else if(c.b>=lim||c.w>=allOut){var d=S.target-1-c.r;S.done=d==0?"Match tie":S.t[S.order[0]]+" jeet gaya, "+d+" run se"}
+    if(c.r>=S.target)S.done=S.t[S.order[1]]+" won by "+(allOut-c.w)+" wicket"+(allOut-c.w==1?"":"s");
+    else if(c.b>=lim||c.w>=allOut){var d=S.target-1-c.r;S.done=d==0?"Match tied":S.t[S.order[0]]+" won by "+d+" run"+(d==1?"":"s")}
   }
 }
 function ball(type,r,o){
@@ -470,7 +471,7 @@ function ball(type,r,o){
 function doSetup(){
   var S=ms().S,c=S.inn[S.i],k=c.q[0],v=function(id){return $(id)?+$(id).value:-1};
   if(k=="openers"){
-    if(v("sst")==v("sns")){alert("Striker aur non-striker alag hon");return}
+    if(v("sst")==v("sns")){alert("Striker and non-striker must be different");return}
     c.st=v("sst");c.ns=v("sns");enter(c,c.st);enter(c,c.ns);c.bw=v("sbw");bowl(c,c.bw);
   }else if(k=="bowler"){c.bw=v("sbw");bowl(c,c.bw)}
   else if(k=="newbat"){var n=v("snb");if(n<0)return;if(c.bt[c.st]&&c.bt[c.st].o)c.st=n;else c.ns=n;enter(c,n)}
@@ -479,31 +480,31 @@ function doSetup(){
 
 $("app").onclick=function(e){
   var el=e.target.closest("[data-a]");if(!el)return;var a=el.dataset.a,t;
-  if(a=="newtour"){var n=$("tn").value.trim();if(!n){alert("Tournament ka naam likhein");return}
+  if(a=="newtour"){var n=$("tn").value.trim();if(!n){alert("Enter a tournament name");return}
     DB.tours.push({id:uid(),name:n,ov:+$("to").value,teams:[],matches:[],ts:Date.now(),logo:TLOGO,banner:TBAN,groups:+$("tg").value});TLOGO="";TBAN="";CREATE="";save();show()}
   else if(a=="open"){T=el.dataset.id;TAB="teams";show()}
-  else if(a=="deltour"){if(confirm("Ye tournament delete karein?")){DB.tours=DB.tours.filter(function(x){return x.id!=el.dataset.id});save();show()}}
+  else if(a=="deltour"){if(confirm("Delete this tournament?")){DB.tours=DB.tours.filter(function(x){return x.id!=el.dataset.id});save();show()}}
   else if(a=="home"){T=null;show()}
   else if(a=="tab"){TAB=el.dataset.v;show()}
   else if(a=="addteam"){var nm=$("tmn").value.trim(),pl=$("tmp").value.split("\n").map(function(s){return s.trim()}).filter(Boolean);
-    if(!nm){alert("Team ka naam likhein");return}
+    if(!nm){alert("Enter a team name");return}
     tour().teams.push({id:uid(),name:nm,logo:LOGO,players:pl,pp:pl.map(function(){return ""}),g:tour().groups?+$("tmg").value:0,ts:Date.now()});LOGO="";save();show()}
   else if(a=="swapg"){var tmg=team(el.dataset.id);tmg.g=1-(tmg.g||0);save();show()}
   else if(a=="mksf"){t=tour();if(t.matches.some(function(m){return m.k}))return;var ga=standings(t,0),gb=standings(t,1);
-    if(ga.length<2||gb.length<2){alert("Har group mein kam az kam 2 teams chahiyen");return}
+    if(ga.length<2||gb.length<2){alert("Each group needs at least 2 teams");return}
     var pn=t.matches.filter(function(m){return !m.k&&!m.S.done}).length;
-    if(pn&&!confirm(pn+" group match abhi baqi hain. Phir bhi semi finals banayein?"))return;
+    if(pn&&!confirm(pn+" group match(es) are still pending. Create the semi finals anyway?"))return;
     mkko(t,ga[0].t,gb[1].t,"Semi Final 1","sf");mkko(t,gb[0].t,ga[1].t,"Semi Final 2","sf");save();show()}
   else if(a=="mkfinal"){t=tour();if(t.matches.some(function(m){return m.k=="f"}))return;var sf=t.matches.filter(function(m){return m.k=="sf"}).sort(byTs);
-    if(sf.length<2||!wid(sf[0])||!wid(sf[1])){alert("Pehle dono semi finals khatam hone chahiyen");return}
+    if(sf.length<2||!wid(sf[0])||!wid(sf[1])){alert("Both semi finals must be finished first");return}
     var w1=t.teams.filter(function(x){return x.id==wid(sf[0])})[0],w2=t.teams.filter(function(x){return x.id==wid(sf[1])})[0];
     mkko(t,w1,w2,"Final","f");save();show()}
   else if(a=="setadv"){var mm2=ms();mm2.adv=$("wa").value=="0"?mm2.ta:mm2.tb;save();show()}
   else if(a=="setwhen"){var mm3=ms(),wv2=$("mwe").value;mm3.when=wv2?new Date(wv2).getTime():0;save();show()}
-  else if(a=="delteam"){if(confirm("Ye team delete karein?")){t=tour();t.teams=t.teams.filter(function(x){return x.id!=el.dataset.id});save();show()}}
+  else if(a=="delteam"){if(confirm("Delete this team?")){t=tour();t.teams=t.teams.filter(function(x){return x.id!=el.dataset.id});save();show()}}
   else if(a=="newmatch"){t=tour();var A=team($("ma").value),B=team($("mb").value);
-    if(A.id==B.id){alert("Do alag teams chunein");return}
-    if(t.groups&&(A.g||0)!=(B.g||0)){alert("Group match mein dono teams aik hi group ki honi chahiyen");return}
+    if(A.id==B.id){alert("Choose two different teams");return}
+    if(t.groups&&(A.g||0)!=(B.g||0)){alert("Both teams of a group match must be in the same group");return}
     var wv=$("mw").value,wh=wv?new Date(wv).getTime():0;
     var m={id:uid(),S:mkS(A,B,+$("mo").value,0),ts:Date.now(),when:wh||0,started:false,ta:A.id,tb:B.id};if(t.groups)m.lbl="Group "+GN[A.g||0];
     t.matches.push(m);save();show()}
@@ -511,8 +512,8 @@ $("app").onclick=function(e){
     if(A2&&B2){var N=mkS(A2,B2,SS.ov,ff);SS.t=N.t;SS.lg=N.lg;SS.pn=N.pn;SS.pl=N.pl}
     SS.order=ff==0?[0,1]:[1,0];mm.started=true;H=[];save();show()}
   else if(a=="newquick"){var na=$("qa").value.trim(),nb=$("qb").value.trim();
-    if(!na||!nb){alert("Dono teams ke naam likhein");return}
-    if(na.toLowerCase()==nb.toLowerCase()){alert("Do alag naam likhein");return}
+    if(!na||!nb){alert("Enter both team names");return}
+    if(na.toLowerCase()==nb.toLowerCase()){alert("Enter two different names");return}
     var pa=lines($("qpa").value),pb=lines($("qpb").value),now=Date.now();
     var QA={id:uid(),name:na,logo:"",players:pa,pp:pa.map(function(){return ""}),ts:now},QB={id:uid(),name:nb,logo:"",players:pb,pp:pb.map(function(){return ""}),ts:now+1};
     var qm={id:uid(),S:mkS(QA,QB,+$("qo").value,+$("qf").value),ts:now,when:now,started:true,ta:QA.id,tb:QB.id};
@@ -526,16 +527,16 @@ $("app").onclick=function(e){
   else if(a=="acc"){ACC=true;ACCMSG="";show();window.scrollTo(0,0)}
   else if(a=="accback"){ACC=false;show()}
   else if(a=="aback"){ABOUT=false;show()}
-  else if(a=="selfreg"){FB.db.set(FB.db.ref(fdb,"admins/"+MYUID),fauth.currentUser.email||"owner").catch(function(x){alert("Nahi hua: "+x.message)})}
-  else if(a=="rmscorer"){if(confirm("Is scorer ki access hata dein?"))FB.db.remove(FB.db.ref(fdb,"admins/"+el.dataset.id)).catch(function(x){alert("Nahi hua: "+x.message)})}
+  else if(a=="selfreg"){FB.db.set(FB.db.ref(fdb,"admins/"+MYUID),fauth.currentUser.email||"owner").catch(function(x){alert("Failed: "+x.message)})}
+  else if(a=="rmscorer"){if(confirm("Remove this scorer's access?"))FB.db.remove(FB.db.ref(fdb,"admins/"+el.dataset.id)).catch(function(x){alert("Failed: "+x.message)})}
   else if(a=="newscorer"){var em=$("ane").value.trim(),pw=$("anp").value,sapp,sa,created=false;
-    if(!em||pw.length<6){accMsg("Email likhein aur password kam az kam 6 characters ka rakhein.");return}
-    accMsg("Account ban raha hai...");
-    try{sapp=FB.app.initializeApp(FB.cfg,"sc"+Date.now());sa=FB.auth.getAuth(sapp)}catch(x){accMsg("Masla: "+x.message);return}
+    if(!em||pw.length<6){accMsg("Enter an email and a password of at least 6 characters.");return}
+    accMsg("Creating account...");
+    try{sapp=FB.app.initializeApp(FB.cfg,"sc"+Date.now());sa=FB.auth.getAuth(sapp)}catch(x){accMsg("Problem: "+x.message);return}
     FB.auth.createUserWithEmailAndPassword(sa,em,pw).then(function(cr){created=true;
       return FB.db.set(FB.db.ref(fdb,"admins/"+cr.user.uid),em)}).then(function(){
-      accMsg("Ho gaya. "+em+" ab \"Scorer login\" se login kar sakta hai. Email aur password us ko bhej dein.")}).catch(function(x){
-      accMsg(x.code=="auth/email-already-in-use"?"Ye email pehle se bana hua hai.":created?"Account ban gaya lekin access list mein save nahi hua ("+x.message+"). Security rules check karein.":"Nahi bana: "+x.message)}).then(function(){
+      accMsg("Done. "+em+" can now log in with \"Scorer login\". Send the email and password to them.")}).catch(function(x){
+      accMsg(x.code=="auth/email-already-in-use"?"This email already has an account.":created?"The account was created but could not be saved to the access list ("+x.message+"). Please check the security rules.":"Could not create: "+x.message)}).then(function(){
       try{FB.auth.signOut(sa)}catch(x){}try{FB.app.deleteApp(sapp)}catch(x){}})}
   else if(a=="openmatch"){M=el.dataset.id;H=[];fix(ms().S);save();show()}
   else if(a=="backm"){WKO=false;M=null;if(tour()&&tour().q)T=null;else TAB="matches";show()}
@@ -547,18 +548,18 @@ $("app").onclick=function(e){
   else if(a=="wkno"){WKO=false;show()}
   else if(a=="wd")ball("wd");
   else if(a=="nb")ball("nb");
-  else if(a=="ldo"){var em=$("lem").value.trim(),pw=$("lpw").value;$("lerr").textContent="Login ho raha hai...";
-    FB.auth.signInWithEmailAndPassword(fauth,em,pw).catch(function(){$("lerr").textContent="Login nahi hua. Email ya password check karein."})}
+  else if(a=="ldo"){var em=$("lem").value.trim(),pw=$("lpw").value;$("lerr").textContent="Logging in...";
+    FB.auth.signInWithEmailAndPassword(fauth,em,pw).catch(function(){$("lerr").textContent="Login failed. Check your email and password."})}
   else if(a=="lcancel"){LOGINV=false;show()}
-  else if(a=="delmatch"){if(confirm("Ye match delete karein?")){t=tour();t.matches=t.matches.filter(function(x){return x.id!=el.dataset.id});save();show()}}
+  else if(a=="delmatch"){if(confirm("Delete this match?")){t=tour();t.matches=t.matches.filter(function(x){return x.id!=el.dataset.id});save();show()}}
   else if(a=="openlive"){T=el.dataset.t;M=el.dataset.id;H=[];fix(ms().S);show()}
   else if(a=="swap"){var S1=ms().S,c1=S1.inn[S1.i];if(!c1.q.length&&c1.st>=0){var x1=c1.st;c1.st=c1.ns;c1.ns=x1;save();show()}}
   else if(a=="team"){TM=el.dataset.id;show()}
   else if(a=="backt"){TM=null;TAB="teams";show()}
   else if(a=="pphoto"){PIDX=+el.dataset.i;$("pph").click()}
   else if(a=="tlogo"){PIDX=-1;$("pph").click()}
-  else if(a=="delplayer"){var tm1=team(TM),i1=+el.dataset.i;if(confirm("Player hata dein?")){tm1.players.splice(i1,1);padj(tm1);tm1.pp.splice(i1,1);save();show()}}
-  else if(a=="addplayer"){var nn=$("npn").value.trim();if(!nn){alert("Player ka naam likhein");return}var tm2=team(TM);padj(tm2);tm2.players.push(nn);tm2.pp.push(NPP);NPP="";save();show()}
+  else if(a=="delplayer"){var tm1=team(TM),i1=+el.dataset.i;if(confirm("Remove this player?")){tm1.players.splice(i1,1);padj(tm1);tm1.pp.splice(i1,1);save();show()}}
+  else if(a=="addplayer"){var nn=$("npn").value.trim();if(!nn){alert("Enter the player name");return}var tm2=team(TM);padj(tm2);tm2.players.push(nn);tm2.pp.push(NPP);NPP="";save();show()}
   else if(a=="undo"){WKO=false;if(H.length){ms().S=JSON.parse(H.pop());save();show()}}
 };
 $("app").onchange=function(e){
@@ -579,7 +580,7 @@ try{var cc=localStorage.getItem("sfc_cache");if(cc){rebuild(JSON.parse(cc));READ
 setDot();setHdr();show();
 if("serviceWorker" in navigator)navigator.serviceWorker.register("./sw.js").catch(function(){});
 if(FB){
-  FB.db.onValue(FB.db.ref(fdb,"tours"),function(snap){var tv=snap.val();try{localStorage.setItem("sfc_cache",JSON.stringify(tv))}catch(e){}rebuild(tv);READY=true;ERR="";if(!busy())show()},function(e){ERR="Data load nahi hua: "+e.message;show()});
+  FB.db.onValue(FB.db.ref(fdb,"tours"),function(snap){var tv=snap.val();try{localStorage.setItem("sfc_cache",JSON.stringify(tv))}catch(e){}rebuild(tv);READY=true;ERR="";if(!busy())show()},function(e){ERR="Could not load data: "+e.message;show()});
   FB.db.onValue(FB.db.ref(fdb,".info/connected"),function(snap){ONLINE=!!snap.val();setDot()});
   FB.auth.onAuthStateChanged(fauth,function(u){ADMIN=!!u;MYUID=u?u.uid:"";LOGINV=false;
     if(UNSUB){UNSUB();UNSUB=null}ADMINS={};ADMERR="";

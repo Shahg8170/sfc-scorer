@@ -99,10 +99,10 @@ function find(id){return G.filter(function(g){return g.id==id})[0]}
 function parseRd(s){return String(s||"").split(",").map(function(x){var p=x.split("-");return[parseFloat(p[0]),parseFloat(p[1])]}).filter(function(p){return !isNaN(p[0])&&!isNaN(p[1])})}
 function tally(g){var a=0,b=0;parseRd(g.rd).forEach(function(p){if(p[0]>p[1])a++;else if(p[1]>p[0])b++});return[a,b]}
 function winner(g){if(g.st!="fin")return"";if(g.res)return g.res;var t=tally(g);return t[0]>t[1]?"a":t[1]>t[0]?"b":"d"}
-function resTxt(g){var w=winner(g);return w=="a"?g.a+" jeeta":w=="b"?g.b+" jeeta":w=="d"?"Draw":""}
-function whenT(g){if(!g.when)return "Time set nahi";try{return new Date(g.when).toLocaleString([],{weekday:"short",day:"numeric",month:"short",hour:"numeric",minute:"2-digit"})}catch(e){return""}}
+function resTxt(g){var w=winner(g);return w=="a"?g.a+" won":w=="b"?g.b+" won":w=="d"?"Draw":""}
+function whenT(g){if(!g.when)return "Time not set";try{return new Date(g.when).toLocaleString([],{weekday:"short",day:"numeric",month:"short",hour:"numeric",minute:"2-digit"})}catch(e){return""}}
 function toLocalIn(ts){var d=new Date(ts);d.setMinutes(d.getMinutes()-d.getTimezoneOffset());return d.toISOString().slice(0,16)}
-function put(g){if(!FB||!ADMIN)return;FB.db.set(FB.db.ref(fdb,"games/"+g.id),g).catch(function(e){alert("Save nahi hua: "+e.message+"\n(Permission denied aaye to cricket app ke Scorer access page se nayi Security rules lagayein, un mein 'games' shamil hai.)")})}
+function put(g){if(!FB||!ADMIN)return;FB.db.set(FB.db.ref(fdb,"games/"+g.id),g).catch(function(e){alert("Save failed: "+e.message+"\n(If you see permission denied, apply the latest security rules from the Scorer access page of the cricket app; they include 'games'.)")})}
 function setG(v){G=Object.keys(v||{}).map(function(k){var g=v[k]||{};g.id=g.id||k;g.st=g.st||"up";g.rd=g.rd||"";g.res=g.res||"";g.a=g.a||"";g.b=g.b||"";g.title=g.title||"";g.venue=g.venue||"";g.when=g.when||0;g.ts=g.ts||0;g.sp=g.sp||"volleyball";return g})}
 function rowsToRd(){return ROWS.filter(function(p){return p[0]!==""&&p[1]!==""}).map(function(p){return (+p[0])+"-"+(+p[1])}).join(",")}
 function grab(){if(!(ID&&ADMIN))return;ROWS=ROWS.map(function(p,i){var a=$("ra"+i),b=$("rb"+i);return a&&b?[a.value,b.value]:p})}
@@ -112,22 +112,22 @@ function setDot(){$("dot").style.background=ONLINE?"#3ECF6E":"#D9482B"}
 
 function loginView(){return '<button class="ghost" data-a="lcancel">Back</button><h1>Scorer login</h1><div class="card"><label for="lem">Email</label><input id="lem" type="email" autocomplete="username"><label for="lpw">Password</label><input id="lpw" type="password" autocomplete="current-password"><button class="primary" data-a="ldo">Login</button><p class="mute" id="lerr"></p></div>'}
 
-function chip(g){return g.st=="live"?'<span class="live">LIVE</span>':g.st=="fin"?'<span class="mute">Khatam</span>':'<span class="mute">Upcoming</span>'}
+function chip(g){return g.st=="live"?'<span class="live">LIVE</span>':g.st=="fin"?'<span class="mute">Finished</span>':'<span class="mute">Upcoming</span>'}
 function card(g){var s=sp(g.sp),t=tally(g),has=parseRd(g.rd).length,rt=resTxt(g);
   return '<div class="card tap" data-a="gopen" data-id="'+g.id+'"><div class="row"><span class="mute">'+s.i+' '+esc(s.n)+(g.title?' | '+esc(g.title):'')+'</span>'+chip(g)+'</div><div style="margin:8px 0 4px"><b style="font-size:18px">'+esc(g.a)+'</b> <span class="mute">vs</span> <b style="font-size:18px">'+esc(g.b)+'</b></div><div class="mute">'+esc(whenT(g))+(g.venue?' | '+esc(g.venue):'')+'</div>'+((g.st!="up"&&(has||rt))?'<div style="margin-top:6px"><span class="sc">'+(has?t[0]+' - '+t[1]:'')+'</span> <span class="mute">'+esc(rt)+'</span></div>':'')+'</div>'}
 
 function listView(){
-  var h='<a href="./" style="color:var(--mute)">&larr; Cricket scorer</a><h1 style="margin-top:8px">Doosri games</h1>';
-  h+='<div class="chips"><button data-a="sp" data-v="all" class="'+(SP=="all"?"on":"")+'">Sab</button>'+SPORTS.map(function(s){return '<button data-a="sp" data-v="'+s.k+'" class="'+(SP==s.k?"on":"")+'">'+s.i+' '+esc(s.n)+'</button>'}).join("")+'</div>';
+  var h='<a href="./" style="color:var(--mute)">&larr; Cricket scorer</a><h1 style="margin-top:8px">Other games</h1>';
+  h+='<div class="chips"><button data-a="sp" data-v="all" class="'+(SP=="all"?"on":"")+'">All</button>'+SPORTS.map(function(s){return '<button data-a="sp" data-v="'+s.k+'" class="'+(SP==s.k?"on":"")+'">'+s.i+' '+esc(s.n)+'</button>'}).join("")+'</div>';
   if(ADMIN){
     if(NEWF){
-      h+='<div class="card"><h2>Match schedule karein</h2><label for="fs">Game</label><select id="fs">'+SPORTS.map(function(s){return '<option value="'+s.k+'"'+(SP==s.k?' selected':'')+'>'+esc(s.n)+'</option>'}).join("")+'</select><label for="fa">Team / Player 1</label><input id="fa"><label for="fb">Team / Player 2</label><input id="fb"><label for="ft">Round ya title (optional, jaisay Semi Final)</label><input id="ft"><label for="fv">Jagah (optional)</label><input id="fv"><label for="fw">Date aur time</label><input id="fw" type="datetime-local"><button class="primary" data-a="gnew">Schedule karein</button><button class="ghost" data-a="fcancel" style="margin-top:8px">Cancel</button></div>';
-    }else h+='<button class="primary" style="margin:0 0 12px" data-a="newf">Match schedule karein</button>';
+      h+='<div class="card"><h2>Schedule match</h2><label for="fs">Game</label><select id="fs">'+SPORTS.map(function(s){return '<option value="'+s.k+'"'+(SP==s.k?' selected':'')+'>'+esc(s.n)+'</option>'}).join("")+'</select><label for="fa">Team / Player 1</label><input id="fa"><label for="fb">Team / Player 2</label><input id="fb"><label for="ft">Round or title (optional, e.g. Semi Final)</label><input id="ft"><label for="fv">Venue (optional)</label><input id="fv"><label for="fw">Date and time</label><input id="fw" type="datetime-local"><button class="primary" data-a="gnew">Schedule</button><button class="ghost" data-a="fcancel" style="margin-top:8px">Cancel</button></div>';
+    }else h+='<button class="primary" style="margin:0 0 12px" data-a="newf">Schedule match</button>';
   }
   var L=G.filter(function(g){return SP=="all"||g.sp==SP});
   var by=function(a,b){return (a.when||a.ts||0)-(b.when||b.ts||0)};
   var live=L.filter(function(g){return g.st=="live"}).sort(by),up=L.filter(function(g){return g.st=="up"}).sort(by),fin=L.filter(function(g){return g.st=="fin"}).sort(function(a,b){return by(b,a)});
-  if(!L.length)h+='<div class="card mute">Abhi koi match nahi hai.</div>';
+  if(!L.length)h+='<div class="card mute">No matches yet.</div>';
   if(live.length){h+='<h2>Live</h2>'+live.map(card).join("")}
   if(up.length){h+='<h2>Upcoming</h2>'+up.map(card).join("")}
   if(fin.length){h+='<h2>Results</h2>'+fin.map(card).join("")}
@@ -135,27 +135,27 @@ function listView(){
 
 function detailView(g){
   var s=sp(g.sp),t=tally(g),rd=parseRd(g.rd),has=rd.length,rt=resTxt(g);
-  var h='<button class="ghost" data-a="gback">Back</button><div class="board"><div class="row"><span class="sub">'+s.i+' '+esc(s.n)+(g.title?' | '+esc(g.title):'')+'</span>'+(g.st=="live"?'<span class="live">LIVE</span>':g.st=="fin"?'<span class="sub">Khatam</span>':'<span class="sub">Upcoming</span>')+'</div>'
+  var h='<button class="ghost" data-a="gback">Back</button><div class="board"><div class="row"><span class="sub">'+s.i+' '+esc(s.n)+(g.title?' | '+esc(g.title):'')+'</span>'+(g.st=="live"?'<span class="live">LIVE</span>':g.st=="fin"?'<span class="sub">Finished</span>':'<span class="sub">Upcoming</span>')+'</div>'
    +'<div class="row" style="margin-top:12px"><span class="team" style="font-size:20px">'+esc(g.a)+'</span><span class="num" style="font-size:44px">'+(has?t[0]:'-')+'</span></div>'
    +'<div class="row"><span class="team" style="font-size:20px">'+esc(g.b)+'</span><span class="num" style="font-size:44px">'+(has?t[1]:'-')+'</span></div>'
    +'<div class="sub" style="margin-top:8px">'+esc(whenT(g))+(g.venue?' | '+esc(g.venue):'')+'</div>'+(rt?'<div class="msg">'+esc(rt)+'</div>':'')+'</div>';
   if(has){h+='<div class="card"><h2>'+s.r+' scores</h2><table><tr><th></th><th class="r">'+esc(g.a)+'</th><th class="r">'+esc(g.b)+'</th></tr>'+rd.map(function(p,i){return '<tr><td>'+s.r+' '+(i+1)+'</td><td class="r"><b>'+p[0]+'</b></td><td class="r"><b>'+p[1]+'</b></td></tr>'}).join("")+'</table></div>'}
-  else if(!ADMIN)h+='<div class="card mute">Abhi score nahi aya.</div>';
+  else if(!ADMIN)h+='<div class="card mute">No score yet.</div>';
   if(!ADMIN)return h;
-  h+='<div class="card"><h2>Score likhein</h2><p class="mute">Har '+s.r.toLowerCase()+' ka score likhein. Jeetne wala khud pata chal jata hai.</p><div class="rd"><span></span><span class="mute">'+esc(g.a)+'</span><span class="mute">'+esc(g.b)+'</span></div>';
+  h+='<div class="card"><h2>Enter score</h2><p class="mute">Enter the score of each '+s.r.toLowerCase()+'. The winner is worked out automatically.</p><div class="rd"><span></span><span class="mute">'+esc(g.a)+'</span><span class="mute">'+esc(g.b)+'</span></div>';
   ROWS.forEach(function(p,i){h+='<div class="rd"><span class="mute">'+s.r+' '+(i+1)+'</span><input id="ra'+i+'" type="number" inputmode="numeric" value="'+esc(p[0])+'"><input id="rb'+i+'" type="number" inputmode="numeric" value="'+esc(p[1])+'"></div>'});
-  h+='<div class="row" style="margin-top:10px"><button class="ex" data-a="radd">+ '+s.r+'</button><button class="ex" data-a="rdel">Last hatayein</button></div><button class="primary" data-a="rsave">Score save karein</button></div>';
+  h+='<div class="row" style="margin-top:10px"><button class="ex" data-a="radd">+ '+s.r+'</button><button class="ex" data-a="rdel">Remove last</button></div><button class="primary" data-a="rsave">Save score</button></div>';
   h+='<div class="card"><h2>Match status</h2>';
-  if(g.st=="up")h+='<button class="primary" style="margin-top:0" data-a="gst" data-v="live">Match live shuru karein</button>';
-  if(g.st=="live")h+='<label for="gres">Natija</label><select id="gres"><option value="">Auto (scores se)</option><option value="a"'+(g.res=="a"?' selected':'')+'>'+esc(g.a)+' jeeta</option><option value="b"'+(g.res=="b"?' selected':'')+'>'+esc(g.b)+' jeeta</option><option value="d"'+(g.res=="d"?' selected':'')+'>Draw</option></select><button class="primary" data-a="gfin">Match khatam karein</button>';
-  if(g.st=="fin")h+='<button class="ex" style="width:100%" data-a="gst" data-v="live">Dobara kholein (result edit)</button>';
+  if(g.st=="up")h+='<button class="primary" style="margin-top:0" data-a="gst" data-v="live">Start match (go live)</button>';
+  if(g.st=="live")h+='<label for="gres">Result</label><select id="gres"><option value="">Auto (from scores)</option><option value="a"'+(g.res=="a"?' selected':'')+'>'+esc(g.a)+' won</option><option value="b"'+(g.res=="b"?' selected':'')+'>'+esc(g.b)+' won</option><option value="d"'+(g.res=="d"?' selected':'')+'>Draw</option></select><button class="primary" data-a="gfin">Finish match</button>';
+  if(g.st=="fin")h+='<button class="ex" style="width:100%" data-a="gst" data-v="live">Reopen (edit result)</button>';
   h+='</div>';
-  h+='<div class="card"><h2>Details</h2><label for="gt">Round ya title</label><input id="gt" value="'+esc(g.title)+'"><label for="gv">Jagah</label><input id="gv" value="'+esc(g.venue)+'"><label for="gw">Date aur time</label><input id="gw" type="datetime-local" value="'+(g.when?toLocalIn(g.when):'')+'"><button class="ex" style="width:100%;margin-top:12px" data-a="gdet">Details save karein</button></div>';
-  h+='<button class="danger" data-a="gdel">Ye match delete karein</button>';
+  h+='<div class="card"><h2>Details</h2><label for="gt">Round or title</label><input id="gt" value="'+esc(g.title)+'"><label for="gv">Venue</label><input id="gv" value="'+esc(g.venue)+'"><label for="gw">Date and time</label><input id="gw" type="datetime-local" value="'+(g.when?toLocalIn(g.when):'')+'"><button class="ex" style="width:100%;margin-top:12px" data-a="gdet">Save details</button></div>';
+  h+='<button class="danger" data-a="gdel">Delete this match</button>';
   return h}
 
 function show(){var h;
-  if(!FB&&!READY)h='<div class="card"><h2>Connect nahi ho saka</h2><p class="mute">Internet check karein aur page dobara kholein.</p></div>';
+  if(!FB&&!READY)h='<div class="card"><h2>Could not connect</h2><p class="mute">Check your internet connection and reload the page.</p></div>';
   else if(LOGINV)h=loginView();
   else if(ID&&find(ID))h=detailView(find(ID));
   else{ID=null;h=listView()}
@@ -167,7 +167,7 @@ $("app").onclick=function(e){
   else if(a=="newf"){NEWF=true;show()}
   else if(a=="fcancel"){NEWF=false;show()}
   else if(a=="gnew"){var na=$("fa").value.trim(),nb=$("fb").value.trim();
-    if(!na||!nb){alert("Dono taraf ke naam likhein");return}
+    if(!na||!nb){alert("Enter both names");return}
     var w=$("fw").value;
     g={id:uid(),sp:$("fs").value,a:na,b:nb,title:$("ft").value.trim(),venue:$("fv").value.trim(),when:w?new Date(w).getTime():0,st:"up",rd:"",res:"",ts:Date.now()};
     G.push(g);put(g);NEWF=false;show()}
@@ -179,9 +179,9 @@ $("app").onclick=function(e){
   else if(a=="gst"){grab();g=find(ID);g.rd=rowsToRd();g.st=el.dataset.v;put(g);show()}
   else if(a=="gfin"){grab();g=find(ID);g.rd=rowsToRd();g.res=$("gres").value;g.st="fin";put(g);show()}
   else if(a=="gdet"){g=find(ID);g.title=$("gt").value.trim();g.venue=$("gv").value.trim();var w2=$("gw").value;g.when=w2?new Date(w2).getTime():0;put(g);show()}
-  else if(a=="gdel"){if(confirm("Ye match delete karein?")){var did=ID;G=G.filter(function(x){return x.id!=did});ID=null;if(FB)FB.db.remove(FB.db.ref(fdb,"games/"+did)).catch(function(er){alert("Delete nahi hua: "+er.message)});show()}}
-  else if(a=="ldo"){var em=$("lem").value.trim(),pw=$("lpw").value;$("lerr").textContent="Login ho raha hai...";
-    FB.auth.signInWithEmailAndPassword(fauth,em,pw).catch(function(){$("lerr").textContent="Login nahi hua. Email ya password check karein."})}
+  else if(a=="gdel"){if(confirm("Delete this match?")){var did=ID;G=G.filter(function(x){return x.id!=did});ID=null;if(FB)FB.db.remove(FB.db.ref(fdb,"games/"+did)).catch(function(er){alert("Delete failed: "+er.message)});show()}}
+  else if(a=="ldo"){var em=$("lem").value.trim(),pw=$("lpw").value;$("lerr").textContent="Logging in...";
+    FB.auth.signInWithEmailAndPassword(fauth,em,pw).catch(function(){$("lerr").textContent="Login failed. Check your email and password."})}
   else if(a=="lcancel"){LOGINV=false;show()}
 };
 $("hb").onclick=function(){if(!FB)return;if(ADMIN){FB.auth.signOut(fauth)}else{LOGINV=true;show()}};
@@ -189,7 +189,7 @@ try{var cc=localStorage.getItem("sfc_games");if(cc){setG(JSON.parse(cc));READY=t
 setDot();setHdr();show();
 if("serviceWorker" in navigator)navigator.serviceWorker.register("./sw.js").catch(function(){});
 if(FB){
-  FB.db.onValue(FB.db.ref(fdb,"games"),function(snap){var v=snap.val();try{localStorage.setItem("sfc_games",JSON.stringify(v||{}))}catch(e){}setG(v);READY=true;if(!busy())show()},function(e){$("app").innerHTML='<div class="card"><h2>Data load nahi hua</h2><p class="mute">'+esc(e.message)+'<br>Security rules mein "games" ka hissa add karna ho ga.</p></div>'});
+  FB.db.onValue(FB.db.ref(fdb,"games"),function(snap){var v=snap.val();try{localStorage.setItem("sfc_games",JSON.stringify(v||{}))}catch(e){}setG(v);READY=true;if(!busy())show()},function(e){$("app").innerHTML='<div class="card"><h2>Could not load data</h2><p class="mute">'+esc(e.message)+'<br>The security rules need a "games" section.</p></div>'});
   FB.db.onValue(FB.db.ref(fdb,".info/connected"),function(snap){ONLINE=!!snap.val();setDot()});
   FB.auth.onAuthStateChanged(fauth,function(u){ADMIN=!!u;LOGINV=false;setHdr();show()});
 }
