@@ -197,7 +197,7 @@ function pfull(t,tmName,n){var r={m:0,inn:0,no:0,r:0,b:0,f:0,s:0,hs:-1,hsno:fals
 function kv(rows){return '<table>'+rows.map(function(x){return '<tr><td class="mute">'+x[0]+'</td><td class="r"><b>'+x[1]+'</b></td></tr>'}).join("")+'</table>'}
 function psView(){var t=tour(),n=PS.n,r=pfull(t,PS.tm,n),tmo=t.teams.filter(function(x){return x.name==PS.tm})[0],pi=tmo?tmo.players.indexOf(n):-1,photo=tmo&&pi>-1?((tmo.pp||[])[pi]||""):"";
   var role=tmo&&tmo.cap==n?"Captain":tmo&&tmo.vc==n?"Vice-captain":"";
-  var h='<button class="ghost" data-a="psback">Back</button><div class="row" style="justify-content:flex-start;margin:6px 0 12px">'+lg(photo,n)+'<div><h1 style="margin:0">'+esc(n)+'</h1><span class="mute">'+esc(PS.tm)+(role?' | '+role:'')+' | '+esc(t.name)+'</span></div></div>';
+  var h='<button class="ghost" data-a="psback">Back</button><div class="row" style="justify-content:flex-start;margin:6px 0 12px">'+lg(photo,n)+'<div><h1 style="margin:0">'+esc(n)+' <span style="font-weight:500;color:var(--mute)">('+esc(PS.tm)+')</span></h1><span class="mute" style="display:inline-flex;align-items:center;gap:6px;margin-top:4px">'+lg(tmo?tmo.logo:"",PS.tm,"s")+esc(PS.tm)+(role?' | '+role:'')+' | '+esc(t.name)+'</span></div></div>';
   if(!r.m)return h+'<div class="card mute">No match played yet.</div>';
   var nd=r.inn-r.no;
   h+='<div class="card"><h2>Batting</h2>'+kv([["Matches",r.m],["Innings",r.inn],["Runs",r.r],["Balls",r.b],["Strike rate",r.b?(r.r*100/r.b).toFixed(1):"-"],["Average",nd>0?(r.r/nd).toFixed(1):"-"],["Highest score",r.hs<0?"-":r.hs+(r.hsno?"*":"")],["Fours",r.f],["Sixes",r.s],["50s / 100s",r.fif+" / "+r.hun],["Not outs",r.no]])+'</div>';
